@@ -1,0 +1,28 @@
+version: '3'
+services:
+  prisma:
+    image: prismagraphql/prisma:1.30.5
+    restart: always
+    ports:
+      - '4470:4470'
+    environment:
+      PRISMA_CONFIG: |
+        port: 4470
+        databases:
+          default:
+            connector: postgres
+            host: postgres
+            port: 5432
+            user: prisma
+            password: prisma
+            migrations: true
+  postgres:
+    image: postgres:10.5
+    restart: always
+    environment:
+      SLOW_QUERIES_LOGGING: 'true'
+      SLOW_QUERIES_LOGGING_THRESHOLD: '5000'
+      POSTGRES_USER: prisma
+      POSTGRES_PASSWORD: prisma
+    volumes:
+      - /Users/rogercalaf/prisma/db-prisma-dev-postgres:/var/lib/postgresql/data

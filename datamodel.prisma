@@ -1,0 +1,599 @@
+type Address {
+	id: ID! @unique
+	street: String
+	city: String
+	postalCode: String
+	country: String
+}
+
+enum Title {
+	MONSIEUR
+	MADAME
+	MADEMOISELLE
+	MONDAMOISEAU
+}
+
+enum CollabRequestStatus {
+	PENDING
+	REJECTED
+	ACCEPTED
+	CANCELED
+}
+
+# Represents a company or an individual that is going to receive an invoice
+type Customer {
+	id: ID! @unique
+	token: String @unique
+	name: String
+	title: Title
+	firstName: String
+	lastName: String
+	email: String!
+	address: Address
+	phone: String
+	occupation: String
+	userNotes: Json @default(value: "{}")
+	siret: String
+	rcs: String
+	rm: String
+	serviceCompany: Company! @relation(name: "CompanyCustomers")
+	projects: [Project!]! @relation(name: "CustomerProjects")
+	linkedTasks: [Item!]! @relation(name: "LinkedCustomerTasks")
+	comments: [Comment!]! @relation(name: "CommentAuthorCustomer")
+	commentViews: [CommentView!]!
+		@relation(name: "CommentViewCustomer", onDelete: CASCADE)
+	files: [File!]! @relation(name: "CustomerFiles")
+	customerEvents: [CustomerEvent!]!
+		@relation(name: "CustomerCustomerEvents", onDelete: CASCADE)
+}
+
+enum ProjectStatus {
+	ONGOING
+	ARCHIVED
+	REMOVED
+}
+
+enum ProjectTemplate {
+	BLANK
+	WEBSITE
+	IDENTITY
+	PROSPECTION
+	MOTION
+	LANDING
+	CARD
+	FLYER_A5
+	FACEBOOK_AD
+	TRANSLATION
+}
+
+enum ItemStatus {
+	PENDING
+	FINISHED
+
+	# deprecated statuses
+	SNOOZED
+	UPDATED
+	UPDATED_SENT
+	ADDED
+	ADDED_SENT
+}
+
+enum ReminderType {
+	QUOTE_AFTER_10_DAYS
+	QUOTE_AFTER_15_DAYS
+	QUOTE_AFTER_20_DAYS
+	QUOTE_5_DAYS_LEFT
+	QUOTE_2_DAYS_LEFT
+	AMENDMENT_AFTER_5_DAYS
+	AMENDMENT_AFTER_10_DAYS
+
+	# Delay sending
+	DELAY
+	# 2 day reminder
+	FIRST
+	# FIRST + days reminder
+	SECOND
+	# SECOND + 1 days reminder
+	LAST
+
+	INVOICE_DELAY
+	INVOICE_FIRST
+	INVOICE_SECOND
+	INVOICE_THIRD
+	INVOICE_FOURTH
+	INVOICE_LAST
+
+	CONTENT_ACQUISITION_DELAY
+	CONTENT_ACQUISITION_FIRST
+	CONTENT_ACQUISITION_SECOND
+
+	# customer has not replied, user warning at LAST + 2 days
+	USER_WARNING
+
+	# Morning email with tasks the user can complete
+	MORNING_TASKS
+	# Evening email with what happened during the day
+	EVENING_RECAP
+	# Reset focused tasks time
+	RESET_FOCUSED_TASKS
+
+	# End of a snooze period
+	SNOOZE_END
+
+	# Slipping away users notification
+	SLIPPING_AWAY
+
+	# Deadline Approaching
+	DEADLINE_APPROACHING
+}
+
+enum ReminderStatus {
+	PENDING
+	SENT
+	ERROR
+	CANCELED
+}
+
+enum JobType {
+	TEAM
+	FULLTIME_INDIVIDUAL
+	PARTTIME_INDIVIDUAL
+	NOT_FREELANCER
+}
+
+enum Reviewer {
+	USER
+	CUSTOMER
+}
+
+enum DAY {
+	MONDAY
+	TUESDAY
+	WEDNESDAY
+	THURSDAY
+	FRIDAY
+	SATURDAY
+	SUNDAY
+}
+
+enum CustomerEventType {
+	VIEWED_PROJECT
+	POSTED_COMMENT
+	UPLOADED_ATTACHMENT
+	FINISHED_TASK
+	VIEWED_QUOTE
+	ACCEPTED_QUOTE
+}
+
+enum UserEventType {
+	ME_CALL
+	FOCUSED_TASK
+	UNFOCUSED_TASK
+	SENT_REMINDER
+	CANCELED_REMINDER
+	ADDED_TASK
+	UPDATED_TASK
+	FINISHED_TASK
+	UNFINISHED_TASK
+	REMOVED_TASK
+	CREATED_PROJECT
+	UPDATED_PROJECT
+	ARCHIVED_PROJECT
+	UNARCHIVED_PROJECT
+	REMOVED_PROJECT
+	CREATED_CUSTOMER
+	UPDATED_CUSTOMER
+	REMOVED_CUSTOMER
+	POSTED_COMMENT
+	ADDED_SECTION
+	UPDATED_SECTION
+	REMOVED_SECTION
+	UPLOADED_ATTACHMENT
+	REMOVED_ATTACHMENT
+	COLLAB_ASKED
+	COLLAB_REQUESTED
+	COLLAB_ACCEPTED
+	COLLAB_REJECTED
+	LINKED_CUSTOMER_TO_TASK
+	UNLINKED_CUSTOMER_TO_TASK
+	LINKED_CUSTOMER_TO_PROJECT
+	UNLINKED_CUSTOMER_TO_PROJECT
+	LINKED_COLLABORATOR_TO_PROJECT
+	UNLINKED_COLLABORATOR_TO_PROJECT
+	LINKED_TO_PROJECT
+	ASSIGNED_TO_TASK
+	REMOVE_ASSIGNMENT_TO_TASK
+}
+
+enum Skill {
+	PRINT_DESIGN
+	WEB_DESIGN
+	UX_DESIGN
+	UI_DESIGN
+	COPYWRITING
+	VIDEO
+	ACCOUNTING
+	PHOTOGRAPHY
+	MARKETING
+	FRONT_END_DEVELOPMENT
+	BACK_END_DEVELOPMENT
+}
+
+enum EmailCategory {
+	CUSTOMER
+	CUSTOMER_REPORT
+	CONTENT_ACQUISITION
+	INVOICE
+	COMMENT_ADDED
+}
+
+type CommentView {
+	id: ID! @unique
+	user: User @relation(name: "CommentViewUser")
+	customer: Customer @relation(name: "CommentViewCustomer")
+	comment: Comment @relation(name: "CommentViews")
+	createdAt: DateTime!
+}
+
+type Comment {
+	id: ID! @unique
+	text: String!
+	authorUser: User @relation(name: "CommentAuthorUser")
+	authorCustomer: Customer @relation(name: "CommentAuthorCustomer")
+	viewedByUser: Boolean! @default(value: false)
+	viewedByCustomer: Boolean! @default(value: false)
+	views: [CommentView!]! @relation(name: "CommentViews", onDelete: CASCADE)
+	item: Item! @relation(name: "ItemComments")
+	createdAt: DateTime!
+}
+
+enum ItemType {
+	DEFAULT
+	CUSTOMER
+	CONTENT_ACQUISITION
+	CUSTOMER_REMINDER
+	VALIDATION
+	USER_REMINDER
+	INVOICE
+	PERSONAL
+}
+
+type TimeRange {
+	id: ID! @unique
+	task: Item! @relation(name: "TaskTimeRanges")
+	start: DateTime!
+	end: DateTime
+}
+
+type ScheduleSpot {
+	id: ID! @unique
+	task: Item! @relation(name: "TaskScheduleSpots")
+	date: DateTime!
+	position: Int!
+	status: ItemStatus! @default(value: PENDING)
+}
+
+type Item {
+	id: ID! @unique
+	owner: User! @relation(name: "UserTasks")
+	scheduledFor: DateTime
+	schedulePosition: Int
+	scheduledForDays: [ScheduleSpot!]!
+		@relation(name: "TaskScheduleSpots", onDelete: CASCADE)
+	focusedBy: User @relation(name: "UserFocusedTasks")
+	linkedCustomer: Customer @relation(name: "LinkedCustomerTasks")
+	assignee: User @relation(name: "UserAssignedTasks")
+	name: String!
+	type: ItemType! @default(value: DEFAULT)
+	description: String @default(value: "")
+	unit: Float! @default(value: 0)
+	comments: [Comment!]! @relation(name: "ItemComments", onDelete: CASCADE)
+	status: ItemStatus! @default(value: PENDING)
+	section: Section @relation(name: "SectionItems")
+	reviewer: Reviewer! @default(value: USER)
+	reminders: [Reminder!]! @relation(name: "ItemReminders", onDelete: CASCADE)
+	attachments: [File!]! @relation(name: "TaskAttachments", onDelete: CASCADE)
+	finishedAt: DateTime
+	position: Int!
+	dailyRate: Float
+	dueDate: DateTime
+	createdAt: DateTime!
+	updatedAt: DateTime!
+	timeItTook: Float
+	currentlyTimedBy: User @relation(name: "UserCurrentTask")
+	workedTimes: [TimeRange!]!
+		@relation(name: "TaskTimeRanges", onDelete: CASCADE)
+	tags: [Tag!]! @relation(name: "ItemTags")
+
+	# deprecated
+	snoozedUntil: Reminder @relation(name: "SnoozeReminders", onDelete: CASCADE)
+}
+
+type Section {
+	id: ID! @unique
+	name: String!
+	items: [Item!]! @relation(name: "SectionItems", onDelete: CASCADE)
+	project: Project! @relation(name: "ProjectSections")
+	position: Int!
+	price: Float
+}
+
+type QuoteItem {
+	id: ID! @unique
+	section: QuoteSection! @relation(name: "QuoteItemSection")
+	name: String!
+}
+
+type QuoteSection {
+	id: ID! @unique
+	quote: Quote! @relation(name: "QuoteSections")
+	items: [QuoteItem!]! @relation(name: "QuoteItemSection")
+	name: String!
+	price: Float!
+}
+
+type Quote {
+	id: ID! @unique
+	issueNumber: Int! @default(value: 0)
+	header: Json
+	footer: Json
+	sections: [QuoteSection!]! @relation(name: "QuoteSections", onDelete: CASCADE)
+	project: Project! @relation(name: "ProjectQuotes")
+	hasTaxes: Boolean! @default(value: false)
+	taxRate: Float @default(value: 20)
+	acceptedAt: DateTime
+	createdAt: DateTime!
+	updatedAt: DateTime!
+	invalid: Boolean! @default(value: true)
+	validQuote: Quote @relation(name: "ValidQuote")
+}
+
+type Project {
+	id: ID! @unique
+	name: String!
+	sharedNotes: Json! @default(value: "{}")
+	personalNotes: Json! @default(value: "{}")
+	template: ProjectTemplate @default(value: BLANK)
+	customer: Customer @relation(name: "CustomerProjects")
+	owner: User! @relation(name: "UserProjects")
+	# this token is a way to restrict access to anyone else than the customer
+	token: String! @unique
+	status: ProjectStatus! @default(value: ONGOING)
+	sections: [Section!]! @relation(name: "ProjectSections", onDelete: CASCADE)
+	viewedByCustomer: Boolean! @default(value: false)
+	issuedAt: DateTime
+	deadline: DateTime
+	budget: Float
+	notifyActivityToCustomer: Boolean! @default(value: true)
+	attachments: [File!]! @relation(name: "ProjectAttachments")
+	linkedCollaborators: [User!]! @relation(name: "CollaboratorsProject")
+	quoteHeader: Json
+	quoteFooter: Json
+	quotes: [Quote!]! @relation(name: "ProjectQuotes")
+	createdAt: DateTime!
+	updatedAt: DateTime!
+}
+
+type Company {
+	id: ID! @unique
+	name: String
+	owner: User! @relation(name: "CompanyOwner")
+	email: String
+	address: Address
+	phone: String
+	type: String
+	siret: String
+	rcs: String
+	rcsCity: String
+	rm: String
+	vat: String
+	vatRate: Float
+	logo: File @relation(name: "CompanyLogo", onDelete: CASCADE)
+	banner: File @relation(name: "CompanyBanner", onDelete: CASCADE)
+	bannerUnsplashId: String
+	customers: [Customer!]! @relation(name: "CompanyCustomers", onDelete: CASCADE)
+	documents: [File!]! @relation(name: "CompanyDocuments", onDelete: CASCADE)
+}
+
+type Settings {
+	user: User! @relation(name: "UserSettings")
+	assistantName: String! @default(value: "Edwige")
+	language: String @default(value: "fr")
+	hasFullWeekSchedule: Boolean! @default(value: false)
+
+	# deprecated
+	askItemFinishConfirmation: Boolean! @default(value: true)
+	askStartProjectConfirmation: Boolean! @default(value: true)
+}
+
+type User {
+	id: ID! @unique
+	email: String! @unique
+	hmacIntercomId: String
+	password: String!
+	firstName: String!
+	lastName: String!
+	referrer: User @relation(name: "UserReferrees")
+	referrees: [User!]! @relation(name: "UserReferrees")
+	company: Company! @relation(name: "CompanyOwner", onDelete: CASCADE)
+	startWorkAt: DateTime
+	endWorkAt: DateTime
+	startBreakAt: DateTime
+	endBreakAt: DateTime
+	workingDays: [DAY!]!
+	timeZone: String
+	userEvents: [UserEvent!]! @relation(name: "UserUserEvents", onDelete: CASCADE)
+	reminders: [Reminder!]! @relation(name: "UserReminders", onDelete: CASCADE)
+	morningReminders: [Reminder!]!
+		@relation(name: "UserMorningReminders", onDelete: CASCADE)
+	eveningReminders: [Reminder!]!
+		@relation(name: "UserEveningReminders", onDelete: CASCADE)
+	resetFocusReminders: [Reminder!]!
+		@relation(name: "UserResetFocusReminders", onDelete: CASCADE)
+	defaultDailyPrice: Int @default(value: 350)
+	defaultVatRate: Int @default(value: 20)
+	commentViews: [CommentView!]!
+		@relation(name: "CommentViewUser", onDelete: CASCADE)
+	workingFields: [String!]!
+	otherSkill: String
+	skills: [Skill!]!
+	otherPain: String
+	painsExpressed: [String!]!
+	canBeContacted: Boolean
+	jobType: JobType
+	interestedFeatures: [String!]!
+	hasUpcomingProject: Boolean
+	settings: Settings! @relation(name: "UserSettings", onDelete: CASCADE)
+	tasks: [Item!]! @relation(name: "UserTasks", onDelete: CASCADE)
+	focusedTasks: [Item!]! @relation(name: "UserFocusedTasks", onDelete: CASCADE)
+	currentTask: Item @relation(name: "UserCurrentTask")
+	projects: [Project!]! @relation(name: "UserProjects", onDelete: CASCADE)
+	collaborationProjects: [Project!]! @relation(name: "CollaboratorsProject")
+	files: [File!]! @relation(name: "UserFiles", onDelete: CASCADE)
+	comments: [Comment!]! @relation(name: "CommentAuthorUser")
+	notifications: [Notification!]! @relation(name: "UserNotifications")
+	createdAt: DateTime!
+	updatedAt: DateTime!
+	tags: [Tag!]! @relation(name: "UserTags", onDelete: CASCADE)
+	lifetimePayment: Boolean @default(value: false)
+	quoteNumber: Int! @default(value: 0)
+
+	collaborators: [User!]! @relation(name: "Collaborators")
+	collaboratorRequests: [CollabRequest!]! @relation(name: "CollabRequester")
+	collaborationRequests: [CollabRequest!]! @relation(name: "CollabRequestee")
+	assignedTasks: [Item!]! @relation(name: "UserAssignedTasks")
+	emailTemplates: [EmailTemplate!]!
+		@relation(name: "UserEmailTemplates", onDelete: CASCADE)
+}
+
+type CollabRequest {
+	id: ID! @unique
+	requester: User! @relation(name: "CollabRequester")
+	requestee: User @relation(name: "CollabRequestee")
+	requesteeEmail: String # if the user is not registered yet
+	status: CollabRequestStatus!
+	acceptedAt: DateTime
+	rejectedAt: DateTime
+	createdAt: DateTime!
+	updatedAt: DateTime!
+}
+
+type Reminder {
+	id: ID! @unique
+	item: Item @relation(name: "ItemReminders")
+	user: User @relation(name: "UserReminder")
+	morningRemindersUser: User @relation(name: "UserMorningReminders")
+	eveningRemindersUser: User @relation(name: "UserEveningReminders")
+	postHookId: String!
+	type: ReminderType!
+	sendingDate: DateTime!
+	status: ReminderStatus @default(value: PENDING)
+	metadata: Json @default(value: "{}")
+
+	# deprecated
+	resetFocusRemindersUser: User @relation(name: "UserResetFocusReminders")
+	snoozedItem: Item @relation(name: "SnoozeReminders")
+}
+
+enum DocumentType {
+	DEFAULT
+	ADMIN
+	DELIVERABLE
+}
+
+type File {
+	id: ID! @unique
+	ownerUser: User @relation(name: "UserFiles")
+	ownerCustomer: Customer @relation(name: "CustomerFiles")
+	filename: String!
+	mimetype: String!
+	encoding: String!
+	url: String!
+	documentType: DocumentType! @default(value: DEFAULT)
+	linkedTask: Item @relation(name: "TaskAttachments")
+	linkedProject: Project @relation(name: "ProjectAttachments")
+	createdAt: DateTime!
+}
+
+type UserEvent {
+	id: ID! @unique
+	type: UserEventType!
+	createdAt: DateTime!
+	user: User @relation(name: "UserUserEvents")
+	metadata: Json @default(value: "{}")
+	notifications: [Notification!]!
+		@relation(name: "UserEventNotifications", onDelete: CASCADE)
+
+	project: Project @relation(name: "UserEventOnProject")
+	section: Section @relation(name: "UserEventOnSection")
+	task: Item @relation(name: "UserEventOnTask")
+	comment: Comment @relation(name: "UserEventOnComment")
+	file: File @relation(name: "UserEventOnFile")
+	reminder: Reminder @relation(name: "UserEventOnReminder")
+	collaborator: User @relation(name: "UserEventOnCollaborator")
+	customer: Customer @relation(name: "UserEventOnCustomer")
+}
+
+type CustomerEvent {
+	id: ID! @unique
+	type: CustomerEventType!
+	createdAt: DateTime!
+	customer: Customer! @relation(name: "CustomerCustomerEvents")
+	metadata: Json @default(value: "{}")
+	notifications: [Notification!]!
+		@relation(name: "CustomerEventNotifications", onDelete: CASCADE)
+
+	project: Project @relation(name: "CustomerEventOnProject")
+	task: Item @relation(name: "CustomerEventOnTask")
+	comment: Comment @relation(name: "CustomerEventOnComment")
+	file: File @relation(name: "CustomerEventOnFile")
+	quote: Quote @relation(name: "CustomerEventOnQuote")
+}
+
+type Notification {
+	id: ID! @unique
+	unread: Boolean! @default(value: true)
+	customerEvent: CustomerEvent @relation(name: "CustomerEventNotifications")
+	userEvent: UserEvent @relation(name: "UserEventNotifications")
+	user: User! @relation(name: "UserNotifications")
+	createdAt: DateTime!
+	updatedAt: DateTime!
+}
+
+type Tag {
+	id: ID! @unique
+	items: [Item!]! @relation(name: "ItemTags")
+	name: String!
+	colorBg: String!
+	colorText: String!
+	owner: User @relation(name: "UserTags")
+}
+
+type EmailType {
+	id: ID! @unique
+	name: String
+	position: Int
+	category: EmailCategory!
+	availableParams: [EmailParamForType!]! @relation(name: "EmailTypeParams")
+}
+
+type EmailParamForType {
+	id: ID! @unique
+	param: EmailParam @relation(name: "EmailParamForTypeEmailParam")
+	required: Boolean!
+}
+
+type EmailParam {
+	id: ID! @unique
+	paramId: String! @unique
+	name: String!
+}
+
+type EmailTemplate {
+	id: ID! @unique
+	type: EmailType! @relation(name: "EmailTemplateEmailType")
+	timing: Json
+	subject: Json!
+	content: Json!
+	owner: User! @relation(name: "UserEmailTemplates")
+}

@@ -1,0 +1,8 @@
+#endpoint: ${env:PRISMA_ENDPOINT}
+endpoint: http://localhost:4470/inyo-api-master/dev
+datamodel: datamodel.prisma
+secret: linkvids2022
+generate:
+  - generator: javascript-client
+    output: ./generated/prisma-client/
+
